@@ -39,3 +39,42 @@ Before running `explain-me`, you need:
 
 ```bash
 export MODEL_PATH=/path/to/your/model.gguf
+
+## Usage
+
+# Basic usage: explain a source code file
+npx explain-me ./path/to/file.go
+
+# Use a custom prompt to tailor the explanation
+npx explain-me ./path/to/file.py --prompt "Summarize this function briefly:"
+
+# Explain a JSON or TypeScript config file
+npx explain-me ./tsconfig.json
+
+# Show help and usage info
+npx explain-me --help
+```
+---
+
+## What happens if you run without arguments?
+If you run npx explain-me without specifying a file path, the CLI will:
+
+Display an error message explaining that the file path is required.
+
+Show usage instructions and available options.
+
+Exit without running the model.
+
+```bash
+$ npx explain-me
+
+❌ Usage: explain-me <file_path> [--prompt "custom prompt"]
+
+Usage: explain-me <file_path> [options]
+
+Options:
+  -prompt string
+        Custom prompt for the model
+  -h, --help
+        Show help message
+```
