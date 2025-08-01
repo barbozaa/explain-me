@@ -1,0 +1,32 @@
+{
+  "name": "explain-me",
+  "version": "1.0.5",
+  "description": "A local CLI tool to explain source code using LLaMA models powered by llama.cpp",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "cli",
+    "llama",
+    "code explanation",
+    "llm",
+    "local-ai"
+  ],
+  "author": "barbozaa",
+  "license": "MIT",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/barbozaa/explain-me.git"
+  },
+  "files": [
+    "bin/",
+    "index.js"
+  ],
+  "homepage": "https://github.com/barbozaa/explain-me",
+  "bin": {
+    "explain-me": "./index.js"
+  },
+  "node": ">=18.0.0"
+}
