@@ -55,15 +55,25 @@ func extractLlamaCli() (string, error) {
 	return exePath, nil
 }
 
-// format prompt for the LLM
-func buildPrompt(code string, customPrompt string) string {
+// build prompt for the model based on flags
+func buildPrompt(code string, customPrompt string, summaryMode bool, bugCheckMode bool) string {
 	if customPrompt != "" {
+		// if custom prompt is provided, use it verbatim
 		return fmt.Sprintf("[INST] %s\n\n%s\n\n[/INST]", customPrompt, code)
 	}
+	if bugCheckMode {
+		// default bug check prompt in English if --bug-check is set and no custom prompt
+		return fmt.Sprintf("[INST] Analyze this code for bugs, vulnerabilities, or bad practices. Explain any issues found:\n\n%s\n\n[/INST]", code)
+	}
+	if summaryMode {
+		// default summary prompt in English if --summary is set and no custom prompt
+		return fmt.Sprintf("[INST] Summarize this code in English, explaining its purpose and main functions:\n\n%s\n\n[/INST]", code)
+	}
+	// default explanation prompt in English if no prompt or special mode
 	return fmt.Sprintf("[INST] Explain what this code does:\n\n%s\n\n[/INST]", code)
 }
 
-// clean and extract the model's response
+// parse the model's response from the raw output
 func parseResponse(response string) (string, error) {
 	parts := strings.SplitN(response, "[/INST]", 2)
 	if len(parts) < 2 {
@@ -75,7 +85,7 @@ func parseResponse(response string) (string, error) {
 	return strings.TrimSpace(answer), nil
 }
 
-// run llama-cli with given model and prompt
+// run llama-cli with the given model and prompt, capturing stdout and stderr
 func runLlamaCli(llamaCLI string, modelPath string, prompt string) (string, error) {
 	cmd := exec.Command(llamaCLI,
 		"-m", modelPath,
@@ -95,7 +105,7 @@ func runLlamaCli(llamaCLI string, modelPath string, prompt string) (string, erro
 	return out.String(), nil
 }
 
-// read all files (non-recursive) from a directory
+// list all non-directory files in the given directory (non-recursive)
 func listFilesInDir(dir string) ([]string, error) {
 	var files []string
 	entries, err := os.ReadDir(dir)
@@ -110,13 +120,14 @@ func listFilesInDir(dir string) ([]string, error) {
 	return files, nil
 }
 
-func analyzeFile(filePath string, llamaCLI string, modelPath string, customPrompt string) error {
+// analyze a single file: read, build prompt, run model, parse and print output
+func analyzeFile(filePath string, llamaCLI string, modelPath string, customPrompt string, summaryMode bool, bugCheckMode bool) error {
 	codeBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("❌ Error reading file %s: %v", filePath, err)
 	}
 	code := string(codeBytes)
-	prompt := buildPrompt(code, customPrompt)
+	prompt := buildPrompt(code, customPrompt, summaryMode, bugCheckMode)
 
 	response, err := runLlamaCli(llamaCLI, modelPath, prompt)
 	if err != nil {
@@ -133,25 +144,27 @@ func analyzeFile(filePath string, llamaCLI string, modelPath string, customPromp
 }
 
 func main() {
-	// get model path from environment
+	// get model path from environment variable
 	modelPath := os.Getenv("MODEL_PATH")
 	if modelPath == "" {
 		log.Fatal("❌ MODEL_PATH environment variable is not set")
 	}
 
-	// define CLI flags
+	// CLI flags: -f file, -d dir, --prompt custom prompt, --summary for summary mode, --bug-check for bug detection mode
 	fileFlag := flag.String("f", "", "Path to a single file to analyze")
 	dirFlag := flag.String("d", "", "Path to a directory to analyze all files")
 	promptFlag := flag.String("prompt", "", "Custom prompt to use")
+	summaryFlag := flag.Bool("summary", false, "If set, use default summary prompt in English")
+	bugCheckFlag := flag.Bool("bug-check", false, "If set, analyze the code for bugs and bad practices")
 
 	flag.Parse()
 
 	if *fileFlag == "" && *dirFlag == "" {
-		fmt.Println("❌ Usage: explain-me -f <file_path> OR -d <directory_path> [--prompt \"your prompt\"]")
+		fmt.Println("❌ Usage: explain-me -f <file_path> OR -d <directory_path> [--prompt \"your prompt\"] [--summary] [--bug-check]")
 		os.Exit(1)
 	}
 
-	// extract embedded llama-cli binary
+	// extract the llama-cli binary
 	llamaCLI, err := extractLlamaCli()
 	if err != nil {
 		log.Fatalf("❌ Failed to extract llama-cli: %v", err)
@@ -159,13 +172,13 @@ func main() {
 	defer os.RemoveAll(filepath.Dir(llamaCLI)) // optional cleanup
 
 	if *fileFlag != "" {
-		// single file mode
-		err := analyzeFile(*fileFlag, llamaCLI, modelPath, *promptFlag)
+		// analyze single file
+		err := analyzeFile(*fileFlag, llamaCLI, modelPath, *promptFlag, *summaryFlag, *bugCheckFlag)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		// directory mode
+		// analyze all files in directory (non-recursive)
 		files, err := listFilesInDir(*dirFlag)
 		if err != nil {
 			log.Fatalf("❌ Failed to read directory: %v", err)
@@ -174,10 +187,9 @@ func main() {
 			fmt.Println("⚠️ No files found in the directory")
 			return
 		}
-
 		for _, file := range files {
 			fmt.Printf("🔍 Analyzing %s...\n", file)
-			err := analyzeFile(file, llamaCLI, modelPath, *promptFlag)
+			err := analyzeFile(file, llamaCLI, modelPath, *promptFlag, *summaryFlag, *bugCheckFlag)
 			if err != nil {
 				fmt.Printf("❌ Error analyzing %s: %v\n", file, err)
 			}
