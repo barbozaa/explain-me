@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	_ "embed"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -98,30 +97,32 @@ func main() {
 		log.Fatal("❌ MODEL_PATH environment variable is not set")
 	}
 
-	customPrompt := flag.String("prompt", "", "Custom prompt for the model")
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s <file_path> [options]\n\n", filepath.Base(os.Args[0]))
-		fmt.Println("Options:")
-		flag.PrintDefaults()
-	}
-	flag.Parse()
+	var filePath string
+	var customPrompt string
 
-	args := flag.Args()
-	if len(args) < 1 {
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if arg == "--prompt" && i+1 < len(os.Args) {
+			customPrompt = os.Args[i+1]
+			i++
+		} else if !strings.HasPrefix(arg, "--") && filePath == "" {
+			filePath = arg
+		}
+	}
+
+	if filePath == "" {
 		fmt.Println("❌ Usage: explain-me <file_path> [--prompt \"custom prompt\"]")
-		flag.Usage()
 		os.Exit(1)
 	}
-	path := args[0]
 
-	codeBytes, err := os.ReadFile(path)
+	codeBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("❌ Error reading file: %s\n", err)
 		os.Exit(1)
 	}
 	code := string(codeBytes)
 
-	prompt := buildPrompt(code, *customPrompt)
+	prompt := buildPrompt(code, customPrompt)
 
 	llamaCLI, err := extractLlamaCli()
 	if err != nil {
