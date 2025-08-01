@@ -37,6 +37,17 @@ Before running `explain-me`, you need:
 - A **LLaMA-compatible GGUF model** (such as [Mistral 7B GGUF](https://huggingface.co/TheBloke/mistral-7B-Instruct-GGUF))
 - Set the environment variable `MODEL_PATH` to the absolute path of your model file:
 
+--
+
+## Compilation
+
+You can also compile this code by running the following command
+```bash
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o bin/explain-me main.go
+```
+
+---
+
 ```bash
 export MODEL_PATH=/path/to/your/model.gguf
 

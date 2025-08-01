@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -16,16 +16,36 @@ import (
 //go:embed assets/bin/mac-arm64/llama-cli
 var llamaCliBytes []byte
 
+func sha256sum(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "error reading: " + err.Error()
+	}
+	sum := sha256.Sum256(data)
+	return fmt.Sprintf("%x", sum)
+}
+
 func extractLlamaCli() (string, error) {
-	tmpDir, err := ioutil.TempDir("", "llama-cli")
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	exePath := filepath.Join(tmpDir, "llama-cli")
-
-	err = ioutil.WriteFile(exePath, llamaCliBytes, 0755)
+	binDir := filepath.Join(homeDir, ".local", "bin")
+	err = os.MkdirAll(binDir, 0755)
 	if err != nil {
 		return "", err
+	}
+
+	exePath := filepath.Join(binDir, "llama-cli")
+	existingHash := sha256sum(exePath)
+	newHash := fmt.Sprintf("%x", sha256.Sum256(llamaCliBytes))
+	if existingHash != newHash {
+		err = os.WriteFile(exePath, llamaCliBytes, 0755)
+		if err != nil {
+			return "", err
+		}
+		os.Chmod(exePath, 0777)
+		exec.Command("xattr", "-d", "com.apple.quarantine", exePath).Run()
 	}
 
 	return exePath, nil
@@ -66,7 +86,7 @@ func runLlamaCli(llamaCLI string, modelPath string, prompt string) (string, erro
 
 	err := cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("error running llama-cli: %v\n%s", err, stderr.String())
+		return "", fmt.Errorf("error running llama-cli: %v\nSTDERR: %s\nSTDOUT: %s", err, stderr.String(), out.String())
 	}
 
 	return out.String(), nil

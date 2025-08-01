@@ -1,6 +1,6 @@
 {
   "name": "explain-me",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A local CLI tool to explain source code using LLaMA models powered by llama.cpp",
   "main": "index.js",
   "scripts": {
