@@ -34,83 +34,64 @@
 
 Before running `explain-me`, you need:
 
-- A **LLaMA-compatible GGUF model** (such as [Mistral 7B GGUF](https://huggingface.co/TheBloke/phi-2-GGUF/tree/main))
+- A **LLaMA-compatible GGUF model** (such as [Mistral 7B GGUF](https://huggingface.co/TheBloke/mistral-7B-Instruct-GGUF))
 - Set the environment variable `MODEL_PATH` to the absolute path of your model file:
+
+--
+
+## Compilation
+
+You can also compile this code by running the following command
+```bash
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o bin/explain-me main.go
+```
+
+---
 
 ```bash
 export MODEL_PATH=/path/to/your/model.gguf
 
 ## Usage
 
-# Basic usage: explain a source code file
+# Analyze a single source file
 npx explain-me -f ./path/to/file.go
+
+# Analyze all files in a directory (non-recursive)
+npx explain-me -d ./path/to/directory
 
 # Use a custom prompt to tailor the explanation
 npx explain-me -f ./path/to/file.py --prompt "Summarize this function briefly:"
 
-# Analyze all files in a directory (non-recursive)
-npx explain-me -d ./path/to/project
-
-# Generate a concise summary explanation (default prompt in English)
+# Summarize code with the built-in summary mode
 npx explain-me -f ./path/to/file.js --summary
 
-# Combine summary mode with custom prompt
-npx explain-me -f ./path/to/file.js --summary --prompt "Focus on security implications:"
+# Check code for bugs and bad practices
+npx explain-me -f ./path/to/file.ts --bug-check
 
-# Show help and usage info
-npx explain-me --help
+# Start interactive chat mode
+npx explain-me --chat-mode
 ```
 ---
 
-## Features
-
-**Summary Mode** (**--summary**)
-When the **--summary** flag is provided, explain-me will ask the model to summarize the code in English, highlighting its purpose and main functions instead of a detailed explanation.
-
-This mode can be combined with a custom prompt (**--prompt**) for even more tailored summaries.
-
-**Directory Analysis** (**-d <directory_path>**)
-Instead of analyzing a single file, use the -d flag to analyze all files (non-recursive) inside a directory. The tool will process each file separately and print individual explanations.
-
-Useful for quick codebase overviews or bulk analysis.
-
-**Bug Check Mode** (**--bug-check**)
-A specialized mode that instructs the model to analyze the code for potential bugs, security issues, or logic errors.
-
-Example:
-```bash
-npx explain-me -f ./src/main.go --bug-check
-```
-This mode is ideal for quick static analysis powered by LLMs to detect subtle problems.
-
 ## What happens if you run without arguments?
+If you run npx explain-me without specifying a file path, the CLI will:
 
-If you run npx explain-me without specifying -f or -d, the CLI will:
+Display an error message explaining that the file path is required.
 
-- Display an error message explaining that a file or directory path is required.
+Show usage instructions and available options.
 
-- Show usage instructions and available options.
-
-- Exit without running the model.
+Exit without running the model.
 
 ```bash
 $ npx explain-me
 
-❌ Usage: explain-me -f <file_path> OR -d <directory_path> [--prompt "your prompt"] [--summary] [--bug-check]
+❌ Usage: explain-me -f <file_path> OR -d <directory_path> [--prompt "custom prompt"] [--summary] [--bug-check] [--chat-mode]
 
-Usage: explain-me [options]
+Usage: explain-me <file_path> [options]
 
 Options:
-  -f string
-        Path to a single file to analyze
-  -d string
-        Path to a directory to analyze all files
   -prompt string
-        Custom prompt to use
-  -summary
-        Use default summary prompt in English
-  -bug-check
-        Analyze code for bugs and potential issues
+        Custom prompt for the model
   -h, --help
         Show help message
 ```

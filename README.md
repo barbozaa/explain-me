@@ -53,17 +53,23 @@ export MODEL_PATH=/path/to/your/model.gguf
 
 ## Usage
 
-# Basic usage: explain a source code file
-npx explain-me ./path/to/file.go
+# Analyze a single source file
+npx explain-me -f ./path/to/file.go
+
+# Analyze all files in a directory (non-recursive)
+npx explain-me -d ./path/to/directory
 
 # Use a custom prompt to tailor the explanation
-npx explain-me ./path/to/file.py --prompt "Summarize this function briefly:"
+npx explain-me -f ./path/to/file.py --prompt "Summarize this function briefly:"
 
-# Explain a JSON or TypeScript config file
-npx explain-me ./tsconfig.json
+# Summarize code with the built-in summary mode
+npx explain-me -f ./path/to/file.js --summary
 
-# Show help and usage info
-npx explain-me --help
+# Check code for bugs and bad practices
+npx explain-me -f ./path/to/file.ts --bug-check
+
+# Start interactive chat mode
+npx explain-me --chat-mode
 ```
 ---
 
@@ -79,7 +85,7 @@ Exit without running the model.
 ```bash
 $ npx explain-me
 
-❌ Usage: explain-me <file_path> [--prompt "custom prompt"]
+❌ Usage: explain-me -f <file_path> OR -d <directory_path> [--prompt "custom prompt"] [--summary] [--bug-check] [--chat-mode]
 
 Usage: explain-me <file_path> [options]
 
